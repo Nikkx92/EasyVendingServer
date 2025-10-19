@@ -166,9 +166,3 @@ func getDataKitVending(companyId, userLogin, password, date string) (int, string
 	}*/
 	return codeResponse, textResponse
 }
-
-func mainRequest(companyId, userLogin, password, date string) (int, string) {
-	codeKit, data := getDataKitVending(companyId, userLogin, password, date)
-
-	return codeKit, data
-}

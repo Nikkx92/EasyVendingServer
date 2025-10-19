@@ -2,6 +2,8 @@ package main
 
 import (
 	"github.com/gin-gonic/gin"
+	"github.com/quic-go/quic-go/http3"
+	"log"
 	"net/http"
 )
 
@@ -28,6 +30,11 @@ func main() {
 		co, te := mainRequest(req.CompanyId, req.UserLogin, req.Password, req.Date)
 		c.JSON(http.StatusOK, Kitresp{Code: co, Text: te})
 	})
-	// слушает 0.0.0.0:8080
-	r.Run(":8080")
+
+	addr := ":4433"
+	log.Printf("serving HTTP/3 on https://localhost%v", addr)
+
+	if err := http3.ListenAndServeTLS(addr, "cert.pem", "key.pem", r); err != nil {
+		log.Fatal(err)
+	}
 }
