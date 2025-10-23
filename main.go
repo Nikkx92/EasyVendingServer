@@ -6,10 +6,13 @@ import (
 )
 
 type Kitreq struct {
-	CompanyId string `json:"CompanyId"`
-	UserLogin string `json:"UserLogin"`
-	Password  string `json:"Password"`
-	Date      string `json:"Date"`
+	CompanyId   string     `json:"CompanyId"`
+	UserLogin   string     `json:"UserLogin"`
+	PasswordKit string     `json:"PasswordKit"`
+	INN         string     `json:"INN"`
+	PasswordFns string     `json:"PasswordFns"`
+	Date        string     `json:"Date"`
+	Device      DeviceInfo `json:"Device"`
 }
 
 type Kitresp struct {
@@ -25,7 +28,7 @@ func main() {
 			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 			return
 		}
-		co, te := mainRequest(req.CompanyId, req.UserLogin, req.Password, req.Date)
+		co, te := mainRequest(req)
 		c.JSON(http.StatusOK, Kitresp{Code: co, Text: te})
 	})
 
