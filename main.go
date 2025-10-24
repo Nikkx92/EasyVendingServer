@@ -51,7 +51,7 @@ func main() {
 			b := false
 			v := "errrrrrr"
 			if b {
-				c.SetCookie("refreshToken", v, 3600, "/", "", false, true)
+				c.Header("Refresh-Token", v)
 				req.Data.RefreshToken = v
 			} else {
 				c.Header("Invalid-Refresh-Token", v)
