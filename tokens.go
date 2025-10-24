@@ -14,40 +14,27 @@ var (
 	token        string
 )
 
-type MetaDetails struct {
-	UserAgent string `json:"userAgent"`
-}
-
-type DeviceInfo struct {
-	SourceDeviceID string      `json:"sourceDeviceId"`
-	SourceType     string      `json:"sourceType"`
-	AppVersion     string      `json:"appVersion"`
-	MetaDetails    MetaDetails `json:"metaDetails"`
-}
-
-type refreshTokenPayload struct {
+type RefreshToken struct {
 	DeviceInfo DeviceInfo `json:"deviceInfo"`
 	Username   string     `json:"username"`
 	Password   string     `json:"password"`
 }
 
-type tokenPayload struct {
+type Token struct {
 	DeviceInfo   DeviceInfo `json:"deviceInfo"`
 	RefreshToken string     `json:"refreshToken"`
 }
 
-type RefTokenResponse struct {
+type RefreshTokenResponse struct {
+	Code         string `json:"code"`
+	Message      string `json:"message"`
 	RefreshToken string `json:"refreshToken"`
 }
 
 func getToken(d DeviceInfo, inn, passF string) {
-	payload := tokenPayload{
+	payload := Token{
 		DeviceInfo:   d,
 		RefreshToken: refreshToken, //"eyJhbGciOiJIUzUxMiJ9.eyJzdWIiOiJ7XCJ0eXBlXCI6XCJSRUZSRVNIX1RPS0VOXCIsXCJyZWZyZXNoQ29udGV4dFwiOntcImF1dGhUeXBlXCI6XCJMS0ZMXCIsXCJmaWRcIjoxMDAxNzcwMTI5MTEsXCJsb2dpblwiOlwiMTAwMTc3MDEyOTExXCIsXCJpZFwiOjI2NTg2MjAzLFwiZGV2aWNlSWRcIjpcIkZHamRqNzNKaGQtampkRF9kODYzMlwiLFwib3BlcmF0b3JJZFwiOm51bGwsXCJjc3VkVXNlcm5hbWVcIjpudWxsLFwic2VnbWVudHNcIjpbXSxcInRva2VuSWRcIjpudWxsLFwiZmlyc3RTZWdtZW50XCI6bnVsbH0sXCJleHBpcmF0aW9uXCI6bnVsbH0ifQ.8K1UHxEwtsMzX2tMtCIIevUqbG7XDvhR2UAYDCI9pPsNtX21FzpTcIn4VLFzjjwAkzS_Lz1txSlnGweXjMtpOg",
-	}
-
-	if payload.RefreshToken == "" {
-		refreshToken = getRefreshToken(d, inn, passF)
 	}
 
 	jsonData, err := json.Marshal(payload)
@@ -69,8 +56,8 @@ func getToken(d DeviceInfo, inn, passF string) {
 	fmt.Println(string(body))
 }
 
-func getRefreshToken(d DeviceInfo, inn, passF string) string {
-	payload := refreshTokenPayload{
+func getRefreshToken(d DeviceInfo, inn, passF string) (string, bool) {
+	payload := RefreshToken{
 		DeviceInfo: d,
 		Username:   inn,
 		Password:   passF,
@@ -97,15 +84,20 @@ func getRefreshToken(d DeviceInfo, inn, passF string) string {
 	}
 	defer resp.Body.Close()
 
-	var response RefTokenResponse
+	var response RefreshTokenResponse
 	err = json.NewDecoder(resp.Body).Decode(&response)
 	if err != nil {
 		fmt.Println("Ошибка:", err)
 	}
 
-	/*body, err := io.ReadAll(response.Body)
+	if response.Code == "authentication.failed" {
+		return response.Message, false
+	} else {
+		return response.RefreshToken, true
+	}
+	/*body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		log.Fatalf("Ошибка при чтении ответа: %v", err)
-	}*/
-	return response.RefreshToken
+	}
+	fmt.Println(string(body))*/
 }

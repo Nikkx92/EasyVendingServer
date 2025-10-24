@@ -26,12 +26,12 @@ type Filter struct {
 	ToDate string `json:"todate"`
 }
 
-type Request struct {
+type RequestKit struct {
 	Auth   Auth   `json:"Auth"`
 	Filter Filter `json:"Filter"`
 }
 
-type Response struct {
+type ResponseKit struct {
 	ErrorMessage string `json:"ErrorMessage"`
 	ResultCode   int    `json:"ResultCode"`
 	Sales        []Sale `json:"Sales"`
@@ -51,7 +51,7 @@ func hashing(c, p string) (h, u string) {
 }
 
 func kitRequest(c, uN, uL, s, uD, tD string) (int, string) {
-	requ := Request{
+	requ := RequestKit{
 		Auth: Auth{
 			CompanyId: c,
 			RequestId: uN,
@@ -80,7 +80,7 @@ func kitRequest(c, uN, uL, s, uD, tD string) (int, string) {
 
 	//body, _ := io.ReadAll(resp.Body)
 
-	var response Response
+	var response ResponseKit
 	err = json.NewDecoder(resp.Body).Decode(&response)
 	if err != nil {
 		fmt.Println("Ошибка:", err)
