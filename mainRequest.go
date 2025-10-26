@@ -1,19 +1,20 @@
 package main
 
-func mainRequest(r Request) (int, string) {
-	if r.Data.RefreshToken == "" {
-		//getRefreshToken(r.Device, r.Data.INN, r.Data.PasswordFns)
+import (
+	"github.com/gin-gonic/gin"
+)
 
-	}
+func mainRequest(r Request, c *gin.Context) string {
 	codeKit, data := getDataKitVending(r.Data.CompanyId, r.Data.UserLogin, r.Data.PasswordKit, r.Data.Date)
 	if codeKit != 0 {
-		return codeKit, data
+		c.Header("Error-Kit", data)
+		return ""
 	} else {
 		codeFns := check()
 		if codeFns == "authentication.failed.expired.token" {
-			codeKit = 1
+			//codeKit = 1
 			//getToken(r.Device, r.INN, r.PasswordFns)
 		}
-		return codeKit, codeFns
+		return codeFns
 	}
 }

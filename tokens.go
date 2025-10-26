@@ -90,14 +90,18 @@ func getRefreshToken(d DeviceInfo, inn, passF string) (string, bool) {
 		fmt.Println("Ошибка:", err)
 	}
 
+	fmt.Println(response.Code, response.Message)
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		log.Fatalf("Ошибка при чтении ответа: %v", err)
+	}
+	fmt.Println(string(body))
+
 	if response.Code == "authentication.failed" {
 		return response.Message, false
 	} else {
 		return response.RefreshToken, true
 	}
-	/*body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		log.Fatalf("Ошибка при чтении ответа: %v", err)
-	}
-	fmt.Println(string(body))*/
+
 }

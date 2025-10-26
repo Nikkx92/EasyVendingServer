@@ -33,7 +33,6 @@ type Request struct {
 }
 
 type Response struct {
-	Code int    `json:"code"`
 	Text string `json:"text"`
 }
 
@@ -47,9 +46,7 @@ func main() {
 		}
 
 		if req.Data.RefreshToken == "" {
-			//v,b := getRefreshToken(req.Device, req.Data.INN, req.Data.PasswordFns)
-			b := false
-			v := "errrrrrr"
+			v, b := getRefreshToken(req.Device, req.Data.INN, req.Data.PasswordFns)
 			if b {
 				c.Header("Refresh-Token", v)
 				req.Data.RefreshToken = v
@@ -58,8 +55,8 @@ func main() {
 			}
 		}
 
-		co, te := mainRequest(req)
-		c.JSON(http.StatusOK, Response{Code: co, Text: te})
+		te := mainRequest(req, c)
+		c.JSON(http.StatusOK, Response{Text: te})
 	})
 
 	if err := r.Run(":8080"); err != nil {
