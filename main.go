@@ -14,6 +14,7 @@ type DataApp struct {
 	PasswordFns  string `json:"PasswordFns"`
 	Date         string `json:"Date"`
 	RefreshToken string `json:"RefreshToken"`
+	Token        string `json:"Token"`
 }
 
 type MetaDetails struct {
@@ -43,16 +44,6 @@ func main() {
 		if err := c.BindJSON(&req); err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 			return
-		}
-
-		if req.Data.RefreshToken == "" {
-			v, b := getRefreshToken(req.Device, req.Data.INN, req.Data.PasswordFns)
-			if b {
-				c.Header("Refresh-Token", v)
-				req.Data.RefreshToken = v
-			} else {
-				c.Header("Invalid-Refresh-Token", v)
-			}
 		}
 
 		te := mainRequest(req, c)

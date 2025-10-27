@@ -9,15 +9,17 @@ import (
 	"net/http"
 )
 
-var (
-	refreshToken string
-	token        string
-)
-
 type RefreshToken struct {
 	DeviceInfo DeviceInfo `json:"deviceInfo"`
 	Username   string     `json:"username"`
 	Password   string     `json:"password"`
+}
+
+type TokensResponse struct {
+	Code         string `json:"code"`
+	Message      string `json:"message"`
+	RefreshToken string `json:"refreshToken"`
+	Token        string `json:"token"`
 }
 
 type Token struct {
@@ -25,16 +27,10 @@ type Token struct {
 	RefreshToken string     `json:"refreshToken"`
 }
 
-type RefreshTokenResponse struct {
-	Code         string `json:"code"`
-	Message      string `json:"message"`
-	RefreshToken string `json:"refreshToken"`
-}
-
-func getToken(d DeviceInfo, inn, passF string) {
+func getToken(d DeviceInfo, rf string) string {
 	payload := Token{
 		DeviceInfo:   d,
-		RefreshToken: refreshToken, //"eyJhbGciOiJIUzUxMiJ9.eyJzdWIiOiJ7XCJ0eXBlXCI6XCJSRUZSRVNIX1RPS0VOXCIsXCJyZWZyZXNoQ29udGV4dFwiOntcImF1dGhUeXBlXCI6XCJMS0ZMXCIsXCJmaWRcIjoxMDAxNzcwMTI5MTEsXCJsb2dpblwiOlwiMTAwMTc3MDEyOTExXCIsXCJpZFwiOjI2NTg2MjAzLFwiZGV2aWNlSWRcIjpcIkZHamRqNzNKaGQtampkRF9kODYzMlwiLFwib3BlcmF0b3JJZFwiOm51bGwsXCJjc3VkVXNlcm5hbWVcIjpudWxsLFwic2VnbWVudHNcIjpbXSxcInRva2VuSWRcIjpudWxsLFwiZmlyc3RTZWdtZW50XCI6bnVsbH0sXCJleHBpcmF0aW9uXCI6bnVsbH0ifQ.8K1UHxEwtsMzX2tMtCIIevUqbG7XDvhR2UAYDCI9pPsNtX21FzpTcIn4VLFzjjwAkzS_Lz1txSlnGweXjMtpOg",
+		RefreshToken: rf,
 	}
 
 	jsonData, err := json.Marshal(payload)
@@ -52,11 +48,20 @@ func getToken(d DeviceInfo, inn, passF string) {
 	resp, _ := client.Do(req)
 	defer resp.Body.Close()
 
-	body, _ := io.ReadAll(resp.Body)
-	fmt.Println(string(body))
+	var response TokensResponse
+	err = json.NewDecoder(resp.Body).Decode(&response)
+	if err != nil {
+		fmt.Println("Ошибка:", err)
+	}
+
+	if response.Code == "authentication.failed" {
+		return response.Code
+	} else {
+		return response.Token
+	}
 }
 
-func getRefreshToken(d DeviceInfo, inn, passF string) (string, bool) {
+func getRefreshToken(d DeviceInfo, inn, passF string) (string, string, bool) {
 	payload := RefreshToken{
 		DeviceInfo: d,
 		Username:   inn,
@@ -84,7 +89,7 @@ func getRefreshToken(d DeviceInfo, inn, passF string) (string, bool) {
 	}
 	defer resp.Body.Close()
 
-	var response RefreshTokenResponse
+	var response TokensResponse
 	err = json.NewDecoder(resp.Body).Decode(&response)
 	if err != nil {
 		fmt.Println("Ошибка:", err)
@@ -99,9 +104,9 @@ func getRefreshToken(d DeviceInfo, inn, passF string) (string, bool) {
 	fmt.Println(string(body))
 
 	if response.Code == "authentication.failed" {
-		return response.Message, false
+		return response.Message, "", false
 	} else {
-		return response.RefreshToken, true
+		return response.RefreshToken, response.Token, true
 	}
 
 }
