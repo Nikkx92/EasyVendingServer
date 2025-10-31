@@ -1,9 +1,15 @@
 package main
 
 import (
-	"net/http"
-
+	"bytes"
 	"github.com/gin-gonic/gin"
+	"log"
+	"net/http"
+)
+
+var (
+	buf    bytes.Buffer
+	logger = log.New(&buf, "server: ", log.Ltime+log.Lshortfile)
 )
 
 type DataApp struct {
@@ -35,6 +41,7 @@ type Request struct {
 
 type Response struct {
 	Text string `json:"text"`
+	Buf  string `json:"buffer"`
 }
 
 func main() {
@@ -47,10 +54,10 @@ func main() {
 		}
 
 		te := mainRequest(req, c)
-		c.JSON(http.StatusOK, Response{Text: te})
+		c.JSON(http.StatusOK, Response{Text: te, Buf: buf.String()})
 	})
 
 	if err := r.Run(":8080"); err != nil {
-		panic(err)
+		logger.Println("ошибка запуска сервера")
 	}
 }

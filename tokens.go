@@ -4,8 +4,6 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"io"
-	"log"
 	"net/http"
 )
 
@@ -35,12 +33,15 @@ func getToken(d DeviceInfo, rf string) string {
 
 	jsonData, err := json.Marshal(payload)
 	if err != nil {
-		log.Fatalf("Ошибка при маршалинге JSON: %v", err)
+		logger.Println(err, "getToken")
 	}
 
 	url := "https://lknpd.nalog.ru/api/v1/auth/token"
 
-	req, _ := http.NewRequest("POST", url, bytes.NewBuffer(jsonData))
+	req, err := http.NewRequest("POST", url, bytes.NewBuffer(jsonData))
+	if err != nil {
+		logger.Println(err, "getToken")
+	}
 
 	req.Header.Set("Content-Type", "application/json")
 
@@ -51,7 +52,7 @@ func getToken(d DeviceInfo, rf string) string {
 	var response TokensResponse
 	err = json.NewDecoder(resp.Body).Decode(&response)
 	if err != nil {
-		fmt.Println("Ошибка:", err)
+		logger.Println(err, "getToken")
 	}
 
 	if response.Code == "authentication.failed" {
@@ -70,14 +71,14 @@ func getRefreshToken(d DeviceInfo, inn, passF string) (string, string, bool) {
 
 	jsonData, err := json.Marshal(payload)
 	if err != nil {
-		log.Fatalf("Ошибка при маршалинге JSON: %v", err)
+		logger.Println(err, "getRefreshToken")
 	}
 
 	url := "https://lknpd.nalog.ru/api/v1/auth/lkfl"
 
 	request, err := http.NewRequest("POST", url, bytes.NewBuffer(jsonData))
 	if err != nil {
-		log.Fatalf("Ошибка при создании запроса: %v", err)
+		logger.Println(err, "getRefreshToken")
 	}
 
 	request.Header.Set("Content-Type", "application/json")
@@ -85,23 +86,17 @@ func getRefreshToken(d DeviceInfo, inn, passF string) (string, string, bool) {
 	client := &http.Client{}
 	resp, err := client.Do(request)
 	if err != nil {
-		log.Fatalf("Ошибка при отправке запроса: %v", err)
+		logger.Println(err, "getRefreshToken")
 	}
 	defer resp.Body.Close()
 
 	var response TokensResponse
 	err = json.NewDecoder(resp.Body).Decode(&response)
 	if err != nil {
-		fmt.Println("Ошибка:", err)
+		logger.Println(err, "getRefreshToken")
 	}
 
 	fmt.Println(response.Code, response.Message)
-
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		log.Fatalf("Ошибка при чтении ответа: %v", err)
-	}
-	fmt.Println(string(body))
 
 	if response.Code == "authentication.failed" {
 		return response.Message, "", false

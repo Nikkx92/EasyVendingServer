@@ -5,8 +5,6 @@ import (
 	"crypto/md5"
 	"encoding/hex"
 	"encoding/json"
-	"fmt"
-	"log"
 	"net/http"
 	"regexp"
 	"strconv"
@@ -51,6 +49,7 @@ func hashing(c, p string) (h, u string) {
 }
 
 func kitRequest(c, uN, uL, s, uD, tD string) (int, string) {
+	logger.Println("run kitRequest")
 	requ := RequestKit{
 		Auth: Auth{
 			CompanyId: c,
@@ -68,13 +67,13 @@ func kitRequest(c, uN, uL, s, uD, tD string) (int, string) {
 	url := "https://api2.kit-invest.ru/APIService.svc/GetSales"
 	req, err := http.NewRequest("POST", url, bytes.NewBuffer(jsonData))
 	if err != nil {
-		log.Fatal("Запрос kitVending не создан")
+		logger.Println(err, "kitRequest")
 	}
 
 	client := &http.Client{}
 	resp, err := client.Do(req)
 	if err != nil {
-		log.Fatal("Запрос KitVending не отправлен")
+		logger.Println(err, "kitRequest")
 	}
 	defer resp.Body.Close()
 
@@ -83,7 +82,7 @@ func kitRequest(c, uN, uL, s, uD, tD string) (int, string) {
 	var response ResponseKit
 	err = json.NewDecoder(resp.Body).Decode(&response)
 	if err != nil {
-		fmt.Println("Ошибка:", err)
+		logger.Println(err, "kitRequest")
 	}
 
 	if response.ResultCode == 0 {
@@ -100,6 +99,7 @@ func kitRequest(c, uN, uL, s, uD, tD string) (int, string) {
 }
 
 func getDataKitVending(companyId, userLogin, password, date string) (int, string) {
+	logger.Println("run getDataKitVending")
 	sign, uniqNum := hashing(companyId, password)
 	matchInterval := regexp.MustCompile(`^\d\d.\d\d.\d\d-\d\d.\d\d.\d\d$`)
 	var upDate string
@@ -114,55 +114,6 @@ func getDataKitVending(companyId, userLogin, password, date string) (int, string
 	}
 
 	codeResponse, textResponse := kitRequest(companyId, uniqNum, userLogin, sign, upDate, toDate)
-	/*uniqueNumb := strconv.FormatInt(time.Now().UnixNano(), 10)
 
-	data := companyId + password + uniqueNumb
-	hash := md5.Sum([]byte(data))
-	sign := hex.EncodeToString(hash[:])
-
-	requ := Request{
-		Auth: Auth{
-			CompanyId: companyId,
-			RequestId: uniqueNumb,
-			UserLogin: userLogin,
-			Sign:      sign,
-		},
-		Filter: Filter{
-			UpDate: upDate + " 00:00:00",
-			ToDate: toDate + " 23:59:00",
-		},
-	}
-
-	jsonData, _ := json.Marshal(requ)
-	url := "https://api2.kit-invest.ru/APIService.svc/GetSales"
-	req, err := http.NewRequest("POST", url, bytes.NewBuffer(jsonData))
-	if err != nil {
-		log.Fatal("Запрос kitVending не создан")
-	}
-
-	client := &http.Client{}
-	resp, err := client.Do(req)
-	if err != nil {
-		log.Fatal("Запрос KitVending не отправлен")
-	}
-	defer resp.Body.Close()
-
-	//body, _ := io.ReadAll(resp.Body)
-
-	var response Response
-	err = json.NewDecoder(resp.Body).Decode(&response)
-	if err != nil {
-		fmt.Println("Ошибка:", err)
-	}*/
-
-	/*if response.ResultCode == 0 {
-		fmt.Println("Успешно!")
-
-		// Работа только с нужными данными
-		for _, sale := range response.Sales {
-			fmt.Printf("Товар: %s, Цена: %.2f руб.\n",
-				sale.GoodsName, sale.Sum)
-		}
-	}*/
 	return codeResponse, textResponse
 }

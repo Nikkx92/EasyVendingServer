@@ -6,29 +6,6 @@ import (
 )
 
 func mainRequest(r Request, c *gin.Context) string {
-	/*if r.Data.RefreshToken == "" {
-		rt, t, b := getRefreshToken(r.Device, r.Data.INN, r.Data.PasswordFns)
-		if b {
-			c.Header("Refresh-Token", rt)
-			c.Header("Token", t)
-			r.Data.RefreshToken = rt
-			r.Data.Token = t
-		} else {
-			c.Header("Invalid-Refresh-Token", rt)
-		}
-	}
-
-	codeKit, data := getDataKitVending(r.Data.CompanyId, r.Data.UserLogin, r.Data.PasswordKit, r.Data.Date)
-	if codeKit != 0 {
-		c.Header("Error-Kit", data)
-		return ""
-	} else {
-		er := check(r)
-		if er == "authentication.failed" {
-			r.Data.RefreshToken = ""
-		}
-		return "codeFns"
-	}*/
 	codeKit, data := getDataKitVending(r.Data.CompanyId, r.Data.UserLogin, r.Data.PasswordKit, r.Data.Date)
 	if codeKit != 0 {
 		c.Header("Error-Kit", data)

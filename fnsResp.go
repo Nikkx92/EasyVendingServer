@@ -3,7 +3,6 @@ package main
 import (
 	"bytes"
 	"encoding/json"
-	"fmt"
 	"log"
 	"net/http"
 	"strconv"
@@ -66,17 +65,24 @@ func check(r Request, d, p []string) string {
 
 			jsonData, err := json.Marshal(payload)
 			if err != nil {
+				logger.Println(err, "check")
 				log.Fatalf("Ошибка при маршалинге JSON: %v", err)
 			}
 
 			url := "https://lknpd.nalog.ru/api/v1/income"
-			request, _ := http.NewRequest("POST", url, bytes.NewBuffer(jsonData))
+			request, err := http.NewRequest("POST", url, bytes.NewBuffer(jsonData))
+			if err != nil {
+				logger.Println(err, "check")
+			}
 
 			request.Header.Set("Authorization", "Bearer "+r.Data.Token)
 			request.Header.Set("Content-Type", "application/json")
 
 			client := &http.Client{}
-			resp, _ := client.Do(request)
+			resp, err := client.Do(request)
+			if err != nil {
+				logger.Println(err, "check")
+			}
 			defer resp.Body.Close()
 
 			/*body, _ := io.ReadAll(resp.Body)
@@ -85,7 +91,7 @@ func check(r Request, d, p []string) string {
 			var checkResponse CheckResponse
 			err = json.NewDecoder(resp.Body).Decode(&checkResponse)
 			if err != nil {
-				fmt.Println("Ошибка:", err)
+				logger.Println(err, "check")
 			}
 
 			switch checkResponse.Code {
