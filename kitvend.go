@@ -49,7 +49,6 @@ func hashing(c, p string) (h, u string) {
 }
 
 func kitRequest(c, uN, uL, s, uD, tD string) (int, string) {
-	logger.Println("run kitRequest")
 	requ := RequestKit{
 		Auth: Auth{
 			CompanyId: c,
@@ -99,7 +98,6 @@ func kitRequest(c, uN, uL, s, uD, tD string) (int, string) {
 }
 
 func getDataKitVending(companyId, userLogin, password, date string) (int, string) {
-	logger.Println("run getDataKitVending")
 	sign, uniqNum := hashing(companyId, password)
 	matchInterval := regexp.MustCompile(`^\d\d.\d\d.\d\d-\d\d.\d\d.\d\d$`)
 	var upDate string

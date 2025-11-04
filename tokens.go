@@ -3,7 +3,6 @@ package main
 import (
 	"bytes"
 	"encoding/json"
-	"fmt"
 	"net/http"
 )
 
@@ -95,8 +94,6 @@ func getRefreshToken(d DeviceInfo, inn, passF string) (string, string, bool) {
 	if err != nil {
 		logger.Println(err, "getRefreshToken")
 	}
-
-	fmt.Println(response.Code, response.Message)
 
 	if response.Code == "authentication.failed" {
 		return response.Message, "", false
