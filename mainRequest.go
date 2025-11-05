@@ -16,7 +16,7 @@ func toKitVending(r Request, c *gin.Context) []string {
 	} else {
 		drinks, price := separateData(data)
 		ca.Set("drinks", drinks, cache.DefaultExpiration)
-		ca.Set("price", price, cache.NoExpiration)
+		ca.Set("price", price, cache.DefaultExpiration)
 		return drinks
 	}
 }
