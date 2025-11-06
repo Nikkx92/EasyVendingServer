@@ -23,7 +23,7 @@ func toKitVending(r Request, c *gin.Context) []string {
 
 func toFns(r Request, c *gin.Context) string {
 	time.Sleep(2 * time.Second)
-	return "complete"
+	return "Отправлено успешно"
 	/*var drinks []string
 	var price []string
 	var er string

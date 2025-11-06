@@ -99,13 +99,13 @@ func check(r Request, d, p []string) string {
 				t := getToken(r.Device, r.Data.RefreshToken)
 				if t != "authentication.failed" {
 					r.Data.Token = t
-					st = "Успешно отправлено!"
+					st = "Отправлено успешно"
 					continue
 				} else {
 					st = t
 				}
 			default:
-				st = "Успешно отправлено!"
+				st = "Отправлено успешно"
 			}
 		}
 	}
