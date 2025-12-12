@@ -1,0 +1,52 @@
+syntax = "proto3";
+
+package kitnalog;
+option go_package = "test/api";
+
+message LoginData {
+  string company_id   = 1;
+  string user_login   = 2;
+  string password_kit = 3;
+  string inn          = 4;
+  string password_fns = 5;
+}
+
+message MetaDetails{
+  string user_agent = 1;
+}
+
+message DeviceInfo {
+  string source_device_id = 1;
+  string source_type      = 2;
+  string app_version      = 3;
+  MetaDetails meta_details = 4;
+}
+
+message Request {
+  LoginData data   = 1;
+  DeviceInfo device = 2;
+  repeated string data_kit = 3;
+}
+
+message AuthResponse {
+  bool IsValid = 1;
+  string message = 2;
+}
+
+message SingleRequest {
+  string jwt = 1;
+  string date = 2;
+  repeated string data_kit = 3;
+  bool auto_mode = 4;
+  bool is_paid = 5;
+}
+
+message ResponseKit {
+  repeated string data = 1;
+  string buf = 2;
+}
+
+service KitNalogService {
+  rpc Auth(Request) returns (AuthResponse);
+  rpc SendToKitVend(SingleRequest) returns (ResponseKit);
+}
