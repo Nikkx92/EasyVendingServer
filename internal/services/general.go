@@ -1,74 +1,18 @@
 package services
 
 import (
-	"bytes"
-	"context"
-	"errors"
-	"fmt"
-	"github.com/golang-jwt/jwt/v5"
-	"github.com/jackc/pgx/v5"
-	"log"
+	"log/slog"
 	"os"
-	"strings"
-	"time"
+	"path/filepath"
 )
 
 var (
-	Buf         bytes.Buffer
-	logger      = log.New(&Buf, "server: ", log.Ltime+log.Lshortfile)
 	Jobs        = NewCancelMap()
 	jwtSecret   = []byte("Don't Be a Menace to South Central While Drinking Your Juice in the Hood")
-	WorkingAuto = make(map[string]int)
+	WorkingAuto = make(map[string]int32)
 )
 
-type SingleRequest struct {
-	Date     string   `json:"date"`
-	DataKit  []string `json:"dataKit"`
-	AutoMode bool     `json:"autoMode"`
-	IsPaid   bool     `json:"isPaid"`
-}
-
-type Customer struct {
-	CompanyId    string     `json:"CompanyId"`
-	UserLogin    string     `json:"UserLogin"`
-	PasswordKit  string     `json:"PasswordKit"`
-	INN          string     `json:"INN"`
-	PasswordFns  string     `json:"PasswordFns"`
-	Date         string     `json:"Date"`
-	Device       DeviceInfo `json:"Device"`
-	RefreshToken string     `json:"RefreshToken"`
-	Token        string     `json:"TokenType"`
-}
-
-func newPGConn() (context.Context, *pgx.Conn, error) {
-	ctx := context.Background()
-
-	conn, err := pgx.Connect(ctx,
-		"postgres://postgres:sonne@192.168.1.46:5432/postgres?sslmode=disable",
-	)
-	if err != nil {
-		return nil, nil, err
-	}
-
-	return ctx, conn, nil
-}
-
-func parseTime(s string) (time.Time, time.Time) {
-	sep := strings.Split(s, "--")
-	const lay = "2006-01-02 15:04:05"
-	loc := time.Local
-	t1, err := time.ParseInLocation(lay, sep[0], loc)
-	if err != nil {
-		fmt.Println(err)
-	}
-	t2, err := time.ParseInLocation(lay, sep[1], loc)
-	if err != nil {
-		fmt.Println(err)
-	}
-	return t1, t2
-}
-
-func AddCustomer(r Request, refreshToken, token string) string {
+/*func AddCustomer(r Request, refreshToken, token string) string {
 	ctx, conn, err := newPGConn()
 	if err != nil {
 		fmt.Println(err)
@@ -89,7 +33,7 @@ func AddCustomer(r Request, refreshToken, token string) string {
 
 	_, err = conn.Exec(ctx, `
 		INSERT INTO customers_device(
-		          jwt,customers_data_id, device_id,refresh_token,token,last_token                   
+		          jwt,customers_data_id, device_id,refresh_token,token,last_token
 		)
 		VALUES ($1,$2,$3,$4,$5,$6)
 `, jwtToken, customersDataID, r.Device.SourceDeviceID, refreshToken, token, time.Now())
@@ -97,23 +41,9 @@ func AddCustomer(r Request, refreshToken, token string) string {
 		fmt.Println("customers_device: ", err)
 	}
 	return jwtToken
-}
+}*/
 
-func newToken(id int64) string {
-	claims := jwt.MapClaims{
-		"sub": id, // идентификатор пользователя
-		//"exp": time.Now().Add(30 * time.Minute).Unix(), // срок действия access‑токена
-		//"iat": time.Now().Unix(),
-	}
-	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-	tokenString, err := token.SignedString(jwtSecret)
-	if err != nil {
-		fmt.Println(err)
-	}
-	return tokenString
-}
-
-func InitData(r SingleRequest, id int64) Customer {
+/*func InitData(ctx context.Context, r SingleRequest, id int64) Customer {
 	ctx, conn, err := newPGConn()
 	if err != nil {
 		fmt.Println(err)
@@ -148,9 +78,9 @@ func InitData(r SingleRequest, id int64) Customer {
 	}
 	c.Date = r.Date
 	return c
-}
+}*/
 
-func AddDrinksDb(c Customer, drinks []string) {
+/*func AddDrinksDb(ctx context.Context, c Customer, drinks []string) {
 	ctx, conn, err := newPGConn()
 	if err != nil {
 		fmt.Println(err)
@@ -186,9 +116,9 @@ func AddDrinksDb(c Customer, drinks []string) {
 			fmt.Println(err)
 		}
 	}
-}
+}*/
 
-func FnsTokenUpdate(c Customer, id int64) {
+/*func FnsTokenUpdate(ctx context.Context, c Customer, id int64) {
 	ctx, conn, err := newPGConn()
 	if err != nil {
 		fmt.Println(err)
@@ -197,7 +127,9 @@ func FnsTokenUpdate(c Customer, id int64) {
 
 	var lastToken time.Time
 	err = conn.QueryRow(ctx, `
-					SELECT last_token FROM customers_device WHERE customers_data_id = $1;
+					SELECT last_token
+					FROM customers_device
+					WHERE customers_data_id = $1;
 		`, id).Scan(&lastToken)
 	if errors.Is(err, pgx.ErrNoRows) {
 		fmt.Println("customer not exist")
@@ -209,7 +141,7 @@ func FnsTokenUpdate(c Customer, id int64) {
 	if lastToken.Before(now.Add(-1 * time.Hour)) {
 		_, err = conn.Exec(ctx, `
 						UPDATE customers_device
-						SET 
+						SET
 						    last_token = $3,
 							token = $2
 						WHERE customers_data_id = $1;
@@ -218,4 +150,26 @@ func FnsTokenUpdate(c Customer, id int64) {
 	if err != nil {
 		fmt.Println(err)
 	}
+}*/
+
+func SlogLogger() {
+	opts := &slog.HandlerOptions{
+		AddSource: true,
+		Level:     slog.LevelInfo,
+		ReplaceAttr: func(groups []string, a slog.Attr) slog.Attr {
+			if a.Key == slog.SourceKey {
+				src := a.Value.Any().(*slog.Source) // value is *Source when AddSource=true
+				src.File = filepath.Base(src.File)  // например, "general.go" вместо полного пути
+				return slog.Any(a.Key, src)
+			}
+			if a.Key == slog.TimeKey && len(groups) == 0 {
+				t := a.Value.Time().Local() // локальная зона
+				a.Value = slog.StringValue(t.Format("2006-01-02T15:04:05"))
+			}
+			return a
+		},
+	}
+	logger := slog.New(slog.NewJSONHandler(os.Stdout, opts))
+	slog.SetDefault(logger)
+	slog.Info("server started")
 }

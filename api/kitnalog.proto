@@ -43,10 +43,27 @@ message SingleRequest {
 
 message ResponseKit {
   repeated string data = 1;
-  string buf = 2;
+  string message = 2;
+}
+
+message ResponseSingleString{
+  string message = 1;
+}
+
+message RespInnerMapSales{
+  map<string, int32> values =1;
+}
+
+message RespOuterMapSales{
+  map<string,RespInnerMapSales> data = 1;
 }
 
 service KitNalogService {
   rpc Auth(Request) returns (AuthResponse);
   rpc SendToKitVend(SingleRequest) returns (ResponseKit);
+  rpc SendToFns (SingleRequest) returns (ResponseSingleString);
+  rpc Start (SingleRequest) returns (ResponseSingleString);
+  rpc Stop (SingleRequest) returns (ResponseSingleString);
+  rpc Sales (SingleRequest) returns (RespOuterMapSales);
+  rpc WorkingAutoMode (SingleRequest) returns (RespInnerMapSales);
 }

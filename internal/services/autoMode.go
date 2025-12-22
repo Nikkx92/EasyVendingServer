@@ -2,9 +2,7 @@ package services
 
 import (
 	"context"
-	"log"
 	"sync"
-	"time"
 )
 
 type CancelMap struct {
@@ -37,40 +35,41 @@ func (c *CancelMap) Delete(key string) {
 	delete(c.internal, key)
 }
 
-func BackgroundWork(ctx context.Context, cus Customer, id int64) {
+/*func BackgroundWork(ctx context.Context, c Customer, id int64) {
 	ticker := time.NewTicker(10 * time.Second)
 	defer ticker.Stop()
-	//startTime := time.Now().Format("2006-01-02" + " 00:00:00")
+	startTime := time.Now().Format("2006-01-02" + " 00:00:00")
 
-	/*work := func() {
+	work := func() {
 		nowTime := time.Now().Format("2006-01-02 15:04:05")
-		cus.Date = startTime + "--" + nowTime
-		drinks := toKitVending(cus)
+		c.Date = startTime + "--" + nowTime
+		fmt.Println(c.Date)
+		drinks, _ := ToKitVending(ctx,c)
 		if drinks == nil {
 			return
 		} else {
-			addDrinksDb(cus, drinks)
-			message, modifiedCustomer := check(cus, drinks)
-			fnsTokenUpdate(modifiedCustomer, id)
+			AddDrinksDb(ctx,c, drinks)
+			message, modifiedCustomer := Check(ctx,c, drinks)
+			FnsTokenUpdate(ctx,modifiedCustomer, id)
 			fmt.Println(message)
 		}
-	}*/
+	}
 
 	select {
 	case <-ctx.Done():
-		log.Printf("Автоматическая отправка для %s остановлена", cus.INN)
+		log.Printf("Автоматическая отправка для %s остановлена", c.INN)
 		return
 	default:
-		//work()
+		work()
 	}
 
 	for {
 		select {
 		case <-ctx.Done():
-			log.Printf("Автоматическая отправка для %s остановлена", cus.INN)
+			log.Printf("Автоматическая отправка для %s остановлена", c.INN)
 			return
 		case <-ticker.C:
-			//work()
+			work()
 		}
 	}
-}
+}*/

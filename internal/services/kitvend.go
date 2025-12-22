@@ -1,140 +1,103 @@
 package services
 
 import (
-	"bytes"
-	"crypto/md5"
-	"encoding/hex"
-	"encoding/json"
-	"fmt"
-	"net/http"
-	"strconv"
+	"context"
 	"strings"
-	"time"
+	"test/internal/domain"
+	"test/internal/store"
 )
 
-type auth struct {
-	CompanyId string `json:"companyid"`
-	RequestId string `json:"requestid"`
-	UserLogin string `json:"userlogin"`
-	Sign      string `json:"sign"`
+type KitService struct {
+	store     *store.Store
+	kitClient KitClient
 }
 
-type filter struct {
-	UpDate string `json:"update"`
-	ToDate string `json:"todate"`
+func NewKitService(store *store.Store, kitClient KitClient) *KitService {
+	return &KitService{
+		store:     store,
+		kitClient: kitClient,
+	}
 }
 
-type request struct {
-	Auth   auth   `json:"Auth"`
-	Filter filter `json:"Filter"`
+type KitClient interface {
+	GetDataKitVending(ctx context.Context, companyId, userLogin, password, date string) (int, string, error)
 }
 
-type response struct {
-	ErrorMessage string `json:"ErrorMessage"`
-	ResultCode   int    `json:"ResultCode"`
-	Sales        []sale `json:"Sales"`
-}
-
-type sale struct {
-	GoodsName string  `json:"GoodsName"`
-	Sum       float64 `json:"Sum"`
-}
-
-func hashing(c, p string) (h, u string) {
-	uniqueNumb := strconv.FormatInt(time.Now().UnixNano(), 10)
-	data := c + p + uniqueNumb
-	hash := md5.Sum([]byte(data))
-	sign := hex.EncodeToString(hash[:])
-	return sign, uniqueNumb
-}
-
-func getDataKitVending(companyId, userLogin, password string, date string) (int, string) {
-	var str string
-	var code int
-
-	sign, uniqNum := hashing(companyId, password)
-	var upDate string
-	var toDate string
-	sep := strings.Split(date, "--")
-	upDate = sep[0]
-	toDate = sep[1]
-
-	requ := request{
-		Auth: auth{
-			CompanyId: companyId,
-			RequestId: uniqNum,
-			UserLogin: userLogin,
-			Sign:      sign,
-		},
-		Filter: filter{
-			UpDate: upDate,
-			ToDate: toDate,
-		},
+func separateData(s string) []string {
+	item := strings.Split(s, ";")
+	/*var drink []string
+	var price []string
+	for i := 0; i < len(item)-1; i++ {
+		d := strings.Split(item[i], ":")
+		drink = append(drink, d[0])
+		price = append(price, d[1])
+	}*/
+	var data []string
+	for i := range len(item) - 1 {
+		data = append(data, item[i])
 	}
 
-	jsonData, _ := json.Marshal(requ)
-	url := "https://api2.kit-invest.ru/APIService.svc/GetSales"
-	req, err := http.NewRequest("POST", url, bytes.NewBuffer(jsonData))
+	return data
+}
+
+func (a *KitService) GetCustomerByID(ctx context.Context, id int64) (domain.Customer, error) {
+	var c domain.Customer
+	c, err := a.store.GetCustomerDataByID(ctx, id)
 	if err != nil {
-		fmt.Println(err)
+		return c, err
 	}
-
-	client := &http.Client{}
-	resp, err := client.Do(req)
-	if err != nil {
-		fmt.Println(err)
-	}
-	defer resp.Body.Close()
-
-	var r response
-	err = json.NewDecoder(resp.Body).Decode(&r)
-	if err != nil {
-		fmt.Println(err)
-	}
-
-	if r.ResultCode == 0 {
-		for _, s := range r.Sales {
-			//fmt.Printf("Товар: %s, Цена: %.2f руб.\n",
-			//sale.GoodsName, sale.Sum)
-			str += s.GoodsName + ":" + strconv.Itoa(int(s.Sum)) + ";"
-		}
-		code = r.ResultCode
-	} else {
-		str = r.ErrorMessage
-		code = r.ResultCode
-	}
-
-	return code, str
+	return c, nil
 }
 
-func ValidLoginKit(r Request) string {
-	sign, uniqNum := hashing(r.Data.CompanyId, r.Data.PasswordKit)
-	reque := request{
-		Auth: auth{
-			CompanyId: r.Data.CompanyId,
-			RequestId: uniqNum,
-			UserLogin: r.Data.UserLogin,
-			Sign:      sign,
-		},
-	}
-	jsonData, _ := json.Marshal(reque)
-	url := "https://api2.kit-invest.ru/APIService.svc/GetModems"
-	req, err := http.NewRequest("POST", url, bytes.NewBuffer(jsonData))
+func (a *KitService) GetDataKitVending(ctx context.Context, companyId, userLogin, password, date string) (int, string, error) {
+	return a.kitClient.GetDataKitVending(ctx, companyId, userLogin, password, date)
+}
+
+func (a *KitService) CheckNewSale(ctx context.Context, c domain.Customer, drinks, date string) ([]string, error) {
+	newDrinks := separateData(drinks)
+	tStart, tEnd := parseTime(date)
+
+	exists, err := a.store.ExistsStartDate(ctx, c.INN, tStart)
 	if err != nil {
-		fmt.Println(err)
+		return nil, err
 	}
 
-	client := &http.Client{}
-	resp, err := client.Do(req)
-	if err != nil {
-		fmt.Println(err)
+	if !exists {
+		return newDrinks, nil
 	}
-	defer resp.Body.Close()
 
-	var res response
-	err = json.NewDecoder(resp.Body).Decode(&res)
+	oldDrinks, err := a.store.GetDrinks(ctx, c.INN, tStart)
 	if err != nil {
-		fmt.Println(err)
+		return nil, err
 	}
-	return res.ErrorMessage
+
+	if len(newDrinks) <= len(oldDrinks) {
+		return nil, nil
+	}
+
+	end, err := a.store.GetEndDate(ctx, c.INN, tStart)
+	if err != nil {
+		return nil, err
+	}
+
+	date = end.Format("2006-01-02 15:04:05") + "--" + tEnd.Format("2006-01-02 15:04:05")
+	_, newData, err := a.kitClient.GetDataKitVending(ctx, c.CompanyID, c.UserLogin, c.PasswordKit, date)
+	if err != nil {
+		return nil, err
+	}
+	return separateData(newData), nil
+}
+
+func (a *KitService) AddDrinks(ctx context.Context, c domain.Customer, drinks []string, date string) error {
+	tStart, tEnd := parseTime(date)
+	var titleDrinks []string
+
+	for i := range drinks {
+		sep := strings.Split(drinks[i], ":")
+		titleDrinks = append(titleDrinks, sep[0])
+	}
+	if err := a.store.InsertDrinks(ctx, c.INN, titleDrinks, tStart, tEnd); err != nil {
+		return err
+	}
+	return nil
 }

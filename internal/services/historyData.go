@@ -1,16 +1,8 @@
 package services
 
-import (
-	"context"
-	"fmt"
-	"github.com/jackc/pgx/v5"
-	"time"
-)
-
-func GetHistory(c Customer) map[string]map[string]int {
-	var all = make(map[string]map[string]int)
-	ctx := context.Background()
-	conn, err := pgx.Connect(ctx, "postgres://postgres:sonne@192.168.1.46:5432/postgres?sslmode=disable")
+/*func GetSales(ctx context.Context, c Customer) map[string]map[string]int32 {
+	var all = make(map[string]map[string]int32)
+	conn, err := newPGConn(ctx)
 	if err != nil {
 		fmt.Println(err)
 	}
@@ -20,7 +12,7 @@ func GetHistory(c Customer) map[string]map[string]int {
 		SELECT started_at, ended_at, drinks
 		FROM customer_request_period
 		WHERE inn = $1
-		ORDER BY started_at DESC 
+		ORDER BY started_at DESC
 `, c.INN)
 	if err != nil {
 		fmt.Println(err)
@@ -34,7 +26,7 @@ func GetHistory(c Customer) map[string]map[string]int {
 			fmt.Println(err)
 		}
 		if all[fmt.Sprintf("%s--%s", start.Format("2006-01-02 15:04:05"), end.Format("2006-01-02 15:04:05"))] == nil {
-			all[fmt.Sprintf("%s--%s", start.Format("2006-01-02 15:04:05"), end.Format("2006-01-02 15:04:05"))] = make(map[string]int)
+			all[fmt.Sprintf("%s--%s", start.Format("2006-01-02 15:04:05"), end.Format("2006-01-02 15:04:05"))] = make(map[string]int32)
 			for i := range d {
 				all[fmt.Sprintf("%s--%s", start.Format("2006-01-02 15:04:05"), end.Format("2006-01-02 15:04:05"))][d[i]]++
 			}
@@ -45,4 +37,4 @@ func GetHistory(c Customer) map[string]map[string]int {
 	}
 
 	return all
-}
+}*/
