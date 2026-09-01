@@ -24,6 +24,17 @@ func NewFnsService(store *store.Store, fnsClient FnsClient) *FnsService {
 	}
 }
 
+func (f *FnsService) SendSaleToFns(ctx context.Context, cus domain.Customer, drinks []string) (domain.Customer, error) {
+	return f.fnsClient.SendSaleToFns(ctx, cus, drinks)
+}
+
+func (f *FnsService) UpdateFnsToken(ctx context.Context, token string, id int64) error {
+	if err := f.store.UpdateFnsToken(ctx, token, id); err != nil {
+		return err
+	}
+	return nil
+}
+
 /*func SendSaleToFns(ctx context.Context, c domain.Customer, drinks []string) (domain.Customer, error) {
 	duplicates := make(map[string]int)
 	for _, s := range drinks {

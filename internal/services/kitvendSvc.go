@@ -4,7 +4,9 @@ import (
 	"context"
 	"strings"
 	"test/internal/domain"
+	"test/internal/errs"
 	"test/internal/store"
+	"time"
 )
 
 type KitService struct {
@@ -20,24 +22,33 @@ func NewKitService(store *store.Store, kitClient KitClient) *KitService {
 }
 
 type KitClient interface {
-	GetDataKitVending(ctx context.Context, companyId, userLogin, password, date string) (int, string, error)
+	GetDataKitVending(ctx context.Context, companyId, userLogin, password, date string) (string, error)
 }
 
 func separateData(s string) []string {
 	item := strings.Split(s, ";")
-	/*var drink []string
-	var price []string
-	for i := 0; i < len(item)-1; i++ {
-		d := strings.Split(item[i], ":")
-		drink = append(drink, d[0])
-		price = append(price, d[1])
-	}*/
+
 	var data []string
 	for i := range len(item) - 1 {
 		data = append(data, item[i])
 	}
 
 	return data
+}
+
+func parseTime(s string) (time.Time, time.Time, error) {
+	sep := strings.Split(s, "--")
+	const lay = "2006-01-02 15:04:05"
+	loc := time.Local
+	t1, err := time.ParseInLocation(lay, sep[0], loc)
+	if err != nil {
+		return time.Time{}, time.Time{}, errs.Wrap(err)
+	}
+	t2, err := time.ParseInLocation(lay, sep[1], loc)
+	if err != nil {
+		return time.Time{}, time.Time{}, errs.Wrap(err)
+	}
+	return t1, t2, nil
 }
 
 func (a *KitService) GetCustomerByID(ctx context.Context, id int64) (domain.Customer, error) {
@@ -49,13 +60,16 @@ func (a *KitService) GetCustomerByID(ctx context.Context, id int64) (domain.Cust
 	return c, nil
 }
 
-func (a *KitService) GetDataKitVending(ctx context.Context, companyId, userLogin, password, date string) (int, string, error) {
+func (a *KitService) GetDataKitVending(ctx context.Context, companyId, userLogin, password, date string) (string, error) {
 	return a.kitClient.GetDataKitVending(ctx, companyId, userLogin, password, date)
 }
 
 func (a *KitService) CheckNewSale(ctx context.Context, c domain.Customer, drinks, date string) ([]string, error) {
 	newDrinks := separateData(drinks)
-	tStart, tEnd := parseTime(date)
+	tStart, tEnd, err := parseTime(date)
+	if err != nil {
+		return nil, err
+	}
 
 	exists, err := a.store.ExistsStartDate(ctx, c.INN, tStart)
 	if err != nil {
@@ -81,7 +95,7 @@ func (a *KitService) CheckNewSale(ctx context.Context, c domain.Customer, drinks
 	}
 
 	date = end.Format("2006-01-02 15:04:05") + "--" + tEnd.Format("2006-01-02 15:04:05")
-	_, newData, err := a.kitClient.GetDataKitVending(ctx, c.CompanyID, c.UserLogin, c.PasswordKit, date)
+	newData, err := a.kitClient.GetDataKitVending(ctx, c.CompanyID, c.UserLogin, c.PasswordKit, date)
 	if err != nil {
 		return nil, err
 	}
@@ -89,7 +103,11 @@ func (a *KitService) CheckNewSale(ctx context.Context, c domain.Customer, drinks
 }
 
 func (a *KitService) AddDrinks(ctx context.Context, c domain.Customer, drinks []string, date string) error {
-	tStart, tEnd := parseTime(date)
+	tStart, tEnd, err := parseTime(date)
+	if err != nil {
+		return err
+	}
+
 	var titleDrinks []string
 
 	for i := range drinks {
